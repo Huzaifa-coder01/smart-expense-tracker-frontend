@@ -3,11 +3,12 @@ import { DEFAULT_BUDGETS, OPENING_BALANCE, generateTransactions } from '../data/
 
 const ExpenseContext = createContext(null)
 
-const STORAGE_KEY = 'set-data-v1'
+// The guest keeps the original key so existing local data survives
+const storageKeyFor = (userId) => (userId === 'guest' ? 'set-data-v1' : `set-data-v1:${userId}`)
 
-const load = () => {
+const load = (key) => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(key)
     if (raw) return JSON.parse(raw)
   } catch {
     /* ignore corrupted storage */
@@ -15,16 +16,17 @@ const load = () => {
   return null
 }
 
-export const ExpenseProvider = ({ children }) => {
-  const [state, setState] = useState(() => load() || { transactions: generateTransactions(), budgets: DEFAULT_BUDGETS })
+export const ExpenseProvider = ({ children, userId = 'guest' }) => {
+  const storageKey = storageKeyFor(userId)
+  const [state, setState] = useState(() => load(storageKey) || { transactions: generateTransactions(), budgets: DEFAULT_BUDGETS })
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+      localStorage.setItem(storageKey, JSON.stringify(state))
     } catch {
       /* storage full / unavailable */
     }
-  }, [state])
+  }, [state, storageKey])
 
   const addTransaction = useCallback((tx) => {
     const created = { ...tx, id: `t${Date.now()}${Math.floor(Math.random() * 1000)}` }

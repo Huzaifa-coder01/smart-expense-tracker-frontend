@@ -1,5 +1,5 @@
 import React from 'react'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Squares2X2Icon,
@@ -10,7 +10,8 @@ import {
   SparklesIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { USER } from '../data/mockData'
+import { useAuth } from '../context/AuthContext'
+import { Avatar } from './Avatar'
 
 const LINKS = [
   { to: '/', label: 'Dashboard', icon: Squares2X2Icon, end: true },
@@ -34,7 +35,9 @@ export const Logo = () => (
   </div>
 )
 
-const Sidebar = ({ open, onClose, onOpenChat }) => (
+const Sidebar = ({ open, onClose, onOpenChat }) => {
+  const { user } = useAuth()
+  return (
   <>
     {/* mobile backdrop */}
     {open && <div className='fixed inset-0 z-30 bg-slate-950/50 backdrop-blur-sm lg:hidden' onClick={onClose} />}
@@ -86,16 +89,17 @@ const Sidebar = ({ open, onClose, onOpenChat }) => (
           <p className='mt-0.5 text-xs text-white/80'>Your AI money assistant. Get answers and insights instantly.</p>
         </button>
 
-        <div className='flex items-center gap-3 rounded-xl border border-line p-3'>
-          <span className='grid h-9 w-9 place-items-center rounded-full bg-brand text-sm font-bold text-white'>{USER.name[0]}</span>
+        <Link to='/profile' onClick={onClose} className='flex items-center gap-3 rounded-xl border border-line p-3 transition hover:bg-surface-2'>
+          <Avatar user={user} />
           <div className='min-w-0 leading-tight'>
-            <p className='truncate text-sm font-semibold'>{USER.fullName}</p>
-            <p className='text-xs text-muted'>{USER.plan} plan</p>
+            <p className='truncate text-sm font-semibold'>{user.fullName}</p>
+            <p className='truncate text-xs text-muted'>{user.guest ? 'Guest mode' : user.email}</p>
           </div>
-        </div>
+        </Link>
       </div>
     </aside>
   </>
-)
+  )
+}
 
 export default Sidebar

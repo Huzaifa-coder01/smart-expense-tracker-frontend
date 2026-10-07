@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import { Bars3Icon, BellIcon, MoonIcon, SunIcon, PlusIcon } from '@heroicons/react/24/outline'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { ArrowRightStartOnRectangleIcon, Bars3Icon, BellIcon, MoonIcon, SunIcon, PlusIcon, UserCircleIcon } from '@heroicons/react/24/outline'
 import { useTheme } from '../context/ThemeContext'
 import { useExpenses } from '../context/ExpenseContext'
 import { budgetStatus } from '../utils/analytics'
 import { formatMoney, monthLabel, currentMonthKey } from '../utils/format'
 import { toneOf } from './ui'
-import { USER } from '../data/mockData'
+import { useAuth } from '../context/AuthContext'
+import { Avatar } from './Avatar'
 
 const TITLES = {
   '/': 'Dashboard',
@@ -14,6 +15,7 @@ const TITLES = {
   '/add-expense': 'Add Expense',
   '/reports': 'Reports',
   '/budget': 'Budget',
+  '/profile': 'Profile',
 }
 
 const Navbar = ({ onMenu }) => {
@@ -22,6 +24,10 @@ const Navbar = ({ onMenu }) => {
   const { transactions, budgets } = useExpenses()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
 
   const alerts = useMemo(
     () => budgetStatus(transactions, budgets).filter((s) => s.state === 'over' || s.state === 'near').sort((a, b) => b.pct - a.pct),
@@ -29,9 +35,17 @@ const Navbar = ({ onMenu }) => {
   )
 
   useEffect(() => {
-    const close = (e) => ref.current && !ref.current.contains(e.target) && setOpen(false)
+    const close = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false)
+    }
+    const esc = (e) => e.key === 'Escape' && (setOpen(false), setMenuOpen(false))
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', esc)
+    }
   }, [])
 
   return (
@@ -89,9 +103,46 @@ const Navbar = ({ onMenu }) => {
             )}
           </div>
 
-          <span className='ml-1 grid h-9 w-9 place-items-center rounded-full bg-brand text-sm font-bold text-white' title={USER.fullName}>
-            {USER.name[0]}
-          </span>
+          <div className='relative ml-1' ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label='Account menu'
+              aria-haspopup='menu'
+              aria-expanded={menuOpen}
+              className='rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60'
+            >
+              <Avatar user={user} />
+            </button>
+            {menuOpen && (
+              <div role='menu' className='card absolute right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] overflow-hidden'>
+                <div className='border-b border-line px-4 py-3'>
+                  <p className='truncate text-sm font-semibold'>{user.fullName}</p>
+                  <p className='truncate text-xs text-muted'>{user.guest ? 'Guest mode' : user.email}</p>
+                </div>
+                <div className='p-1.5'>
+                  <Link
+                    to='/profile'
+                    role='menuitem'
+                    onClick={() => setMenuOpen(false)}
+                    className='flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition hover:bg-surface-2'
+                  >
+                    <UserCircleIcon className='h-5 w-5 text-muted' /> Profile
+                  </Link>
+                  <button
+                    role='menuitem'
+                    onClick={async () => {
+                      setMenuOpen(false)
+                      await signOut()
+                      navigate('/login', { replace: true })
+                    }}
+                    className='flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-rose-500 transition hover:bg-surface-2'
+                  >
+                    <ArrowRightStartOnRectangleIcon className='h-5 w-5' /> {user.guest ? 'Exit guest mode' : 'Sign out'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

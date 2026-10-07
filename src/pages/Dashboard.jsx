@@ -4,13 +4,14 @@ import { ArrowDownLeftIcon, ArrowUpRightIcon, BanknotesIcon, ChartPieIcon, Light
 import { useExpenses } from '../context/ExpenseContext'
 import { buildInsights, budgetStatus, monthProgress, monthTotals, percentChange, totalBalance } from '../utils/analytics'
 import { currentMonthKey, formatMoney, greeting, shiftMonthKey } from '../utils/format'
-import { USER } from '../data/mockData'
+import { useAuth } from '../context/AuthContext'
 import { Delta, PageHeader, ProgressBar, StatCard } from '../components/ui'
 import ExpenseCard from '../components/ExpenseCard'
 import ChartComponent from '../components/ChartComponent'
 import CashFlowChart from '../components/CashFlowChart'
 
 const Dashboard = () => {
+  const { user } = useAuth()
   const { transactions, budgets, openingBalance } = useExpenses()
   const key = currentMonthKey()
 
@@ -34,7 +35,7 @@ const Dashboard = () => {
 
   return (
     <>
-      <PageHeader title={`${greeting()}, ${USER.name} 👋`} subtitle="Here's what's happening with your money this month." />
+      <PageHeader title={`${greeting()}, ${user.name} 👋`} subtitle="Here's what's happening with your money this month." />
 
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4'>
         <StatCard index={0} label='Total balance' value={formatMoney(balance)} icon={BanknotesIcon} tint='#6366f1'>
